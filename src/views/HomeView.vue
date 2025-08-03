@@ -1,9 +1,9 @@
 <script setup>
-import TheWelcome from '../components/TheWelcome.vue'
+
 </script>
 
 <template>
-  <main>
-    <TheWelcome />
-  </main>
+  <div class="container mt-4">
+    <h1>Employee Management Portal</h1>
+  </div>
 </template>
