@@ -1,14 +1,27 @@
-import js from '@eslint/js'
+import { defineConfig, globalIgnores } from 'eslint/config'
 import globals from 'globals'
+import js from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
-import { defineConfig } from 'eslint/config'
+import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
 
 export default defineConfig([
   {
-    files: ['**/*.{js,mjs,cjs,vue}'],
-    plugins: { js },
-    extends: ['js/recommended'],
-    languageOptions: { globals: globals.browser },
+    name: 'app/files-to-lint',
+    files: ['**/*.{js,mjs,jsx,vue}'],
   },
-  pluginVue.configs['flat/essential'],
+
+  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+
+  {
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+
+  js.configs.recommended,
+  ...pluginVue.configs['flat/essential'],
+
+  skipFormatting,
 ])
