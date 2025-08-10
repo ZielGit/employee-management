@@ -1,12 +1,19 @@
 <script setup>
 import { RouterView } from 'vue-router'
-import Navbar from './components/Navbar.vue';
+import NavbarComponent from './components/NavbarComponent.vue'
+import SidebarComponent from './components/SidebarComponent.vue';
 </script>
 
 <template>
-  <header>
-    <Navbar />
-  </header>
+  <v-app id="inspire">
+    <NavbarComponent />
 
-  <RouterView />
+    <SidebarComponent />
+
+    <v-main>
+      <v-container class="py-8 px-6" fluid>
+        <RouterView />
+      </v-container>
+    </v-main>
+  </v-app>
 </template>
