@@ -5,12 +5,14 @@ import { onMounted, ref } from 'vue';
 const apiUrl = import.meta.env.VITE_API_URL;
 const photoPath = import.meta.env.VITE_PHOTO_URL;
 const employees = ref([]);
-const modalRef = ref(null);
+const dialog = ref(false)
+const confirmationDialog = ref(false)
 const modalTitle = ref('');
 const EmployeeId = ref(0);
 const EmployeeName = ref('');
 const DateOfJoining = ref('');
 const PhotoFileName = ref('');
+const employeeToDelete = ref(null);
 
 onMounted(async () => {
     await fetchEmployees();
@@ -22,7 +24,7 @@ function addClick() {
     EmployeeName.value = "";
     DateOfJoining.value = "";
     PhotoFileName.value = "default.png";
-    new bootstrap.Modal(modalRef.value).show();
+    dialog.value = true
 }
 
 function editClick(employee) {
@@ -39,7 +41,7 @@ function editClick(employee) {
     DateOfJoining.value = formattedDateOfBirth;
 
     PhotoFileName.value = employee.PhotoFileName;
-    new bootstrap.Modal(modalRef.value).show();
+    dialog.value = true
 }
 
 async function imageUpload(event) {
@@ -62,8 +64,7 @@ async function createClick() {
         });
         await fetchEmployees();
         alert("Employee created successfully");
-        const modal = bootstrap.Modal.getInstance(modalRef.value);
-        modal.hide();
+        dialog.value = false
     } catch (error) {
         console.error(error);
     }
@@ -78,8 +79,7 @@ async function updateClick() {
         });
         await fetchEmployees();
         alert("Employee updated successfully");
-        const modal = bootstrap.Modal.getInstance(modalRef.value);
-        modal.hide();
+        dialog.value = false
     } catch (error) {
         console.error(error);
     }
@@ -102,77 +102,97 @@ const deleteEmployee = async (id) => {
         console.error(error);
     }
 };
+
+function openDeleteDialog(id) {
+    employeeToDelete.value = id;
+    confirmationDialog.value = true;
+}
 </script>
 
 <template>
-    <div class="container mt-4">
-        <button class="btn btn-primary mb-2" @click="addClick()">
-            Add Employee
-        </button>
-        <div class="card">
-            <div class="card-header">
-                <h1>Employee List</h1>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th scope="col">ID</th>
-                                <th scope="col">Name</th>
-                                <th scope="col">Date Of Joining</th>
-                                <th scope="col">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="employee in employees" :key="employee.id">
-                                <td scope="row">{{ employee.id }}</td>
-                                <td>{{ employee.EmployeeName }}</td>
-                                <td>{{ employee.DateOfJoining }}</td>
-                                <td>
-                                    <button type="button" class="btn btn-warning me-1" @click="editClick(employee)">
-                                        Edit
-                                    </button>
-                                    <button type="button" class="btn btn-danger" @click="deleteEmployee(employee.id)">
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+    <v-btn prepend-icon="$plus" color="indigo-accent-4" @click="addClick()">
+        Add Employee
+    </v-btn>
 
-    <div class="modal fade" ref="modalRef">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">{{ modalTitle }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="input-group mb-3">
-                        <span class="input-group-text">Employee Name</span>
-                        <input type="text" class="form-control" v-model="EmployeeName">
-                    </div>
-                    <div class="input-group mb-3">
-                        <span class="input-group-text">DOJ</span>
-                        <input type="date" class="form-control" v-model="DateOfJoining">
-                    </div>
-                    <div class="p-2 w-50 bd-highlight">
+    <h1>Employee List</h1>
+
+    <v-table striped="even">
+        <thead>
+            <tr>
+                <th class="text-left">
+                    ID
+                </th>
+                <th class="text-left">
+                    Name
+                </th>
+                <th class="text-left">
+                    Date Of Joining
+                </th>
+                <th class="text-left">
+                    Actions
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="employee in employees" :key="employee.id">
+                <td>{{ employee.id }}</td>
+                <td>{{ employee.EmployeeName }}</td>
+                <td>{{ employee.DateOfJoining }}</td>
+                <td>
+                    <v-btn class="ma-2" color="yellow-darken-1" @click="editClick(employee)">
+                        Edit
+                    </v-btn>
+                    <v-btn color="red-darken-1" @click="openDeleteDialog(employee.id)">
+                        Delete
+                    </v-btn>
+                </td>
+            </tr>
+        </tbody>
+    </v-table>
+
+    <v-dialog v-model="dialog" max-width="500">
+        <v-card :title="modalTitle">
+            <v-container>
+                <v-row>
+                    <v-col cols="12">
+                        <v-text-field v-model="EmployeeName" label="Employee Name" required></v-text-field>
+                    </v-col>
+                    <v-col cols="12">
+                        <v-text-field v-model="DateOfJoining" label="Date Of Joining" type="date"
+                            required></v-text-field>
+                    </v-col>
+                    <v-col cols="12">
+                        <v-file-input label="File input" @change="imageUpload"></v-file-input>
+                    </v-col>
+                    <v-col cols="12">
                         <img width="250px" height="250px" :src="photoPath + '/' + PhotoFileName" />
-                        <input class="m-2" type="file" @change="imageUpload">
-                    </div>
-                    <button type="button" @click="createClick" v-if="EmployeeId == 0" class="btn btn-primary">
-                        Create
-                    </button>
-                    <button type="button" @click="updateClick" v-if="EmployeeId != 0" class="btn btn-primary">
-                        Update
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+                    </v-col>
+                </v-row>
+            </v-container>
+
+            <template v-slot:actions>
+                <v-btn text="Close" @click="dialog = false">Close</v-btn>
+
+                <v-spacer></v-spacer>
+
+                <v-btn @click="createClick" v-if="EmployeeId == 0">
+                    Create
+                </v-btn>
+                <v-btn @click="updateClick" v-if="EmployeeId != 0">
+                    Update
+                </v-btn>
+            </template>
+        </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="confirmationDialog" width="auto">
+        <v-card max-width="400" text="You won't be able to revert this!." title="Are you sure?">
+            <template v-slot:actions>
+                <v-btn text="Close" @click="confirmationDialog = false">Cancel</v-btn>
+                <v-spacer></v-spacer>
+                <v-btn class="ms-auto" text="Yes"
+                    @click="deleteEmployee(employeeToDelete); confirmationDialog = false"></v-btn>
+            </template>
+        </v-card>
+    </v-dialog>
 </template>
