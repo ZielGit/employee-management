@@ -4,10 +4,12 @@ import { onMounted, ref } from 'vue';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 const departments = ref([]);
-const modalRef = ref(null);
+const dialog = ref(false)
+const confirmationDialog = ref(false)
 const modalTitle = ref('');
 const DepartmentId = ref(0);
 const DepartmentName = ref('');
+const departmentToDelete = ref(null);
 
 onMounted(async () => {
     await fetchDepartments();
@@ -17,14 +19,14 @@ function addClick() {
     modalTitle.value = "Add Department";
     DepartmentId.value = 0;
     DepartmentName.value = "";
-    new bootstrap.Modal(modalRef.value).show();
+    dialog.value = true
 }
 
 function editClick(department) {
     modalTitle.value = "Edit Department";
     DepartmentId.value = department.id;
     DepartmentName.value = department.DepartmentName;
-    new bootstrap.Modal(modalRef.value).show();
+    dialog.value = true
 }
 
 async function createClick() {
@@ -34,8 +36,7 @@ async function createClick() {
         });
         await fetchDepartments();
         alert("Department created successfully");
-        const modal = bootstrap.Modal.getInstance(modalRef.value);
-        modal.hide();
+        dialog.value = false
     } catch (error) {
         console.error(error);
     }
@@ -48,8 +49,7 @@ async function updateClick() {
         });
         await fetchDepartments();
         alert("Department updated successfully");
-        const modal = bootstrap.Modal.getInstance(modalRef.value);
-        modal.hide();
+        dialog.value = false
     } catch (error) {
         console.error(error);
     }
@@ -64,7 +64,7 @@ const fetchDepartments = async () => {
     }
 };
 
-const deletedepartment = async (id) => {
+const deleteDepartment = async (id) => {
     try {
         await axios.delete(`${apiUrl}/employee/delete-department/${id}`);
         await fetchDepartments();
@@ -72,69 +72,83 @@ const deletedepartment = async (id) => {
         console.error(error);
     }
 };
+
+function openDeleteDialog(id) {
+    departmentToDelete.value = id;
+    confirmationDialog.value = true;
+}
 </script>
 
 <template>
-    <div class="container mt-4">
-        <button class="btn btn-primary mb-2" @click="addClick()">
-            Add Department
-        </button>
-        <div class="card">
-            <div class="card-header">
-                <h1>Department List</h1>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th scope="col">ID</th>
-                                <th scope="col">Name</th>
-                                <th scope="col">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="department in departments" :key="department.id">
-                                <td scope="row">{{ department.id }}</td>
-                                <td>{{ department.DepartmentName }}</td>
-                                <td>
-                                    <button type="button" class="btn btn-warning me-1" @click="editClick(department)">
-                                        Edit
-                                    </button>
-                                    <button type="button" class="btn btn-danger" @click="deletedepartment(department.id)">
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+    <v-btn prepend-icon="$plus" color="indigo-accent-4" @click="addClick()">
+        Add Department
+    </v-btn>
 
-    <div class="modal fade" ref="modalRef">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">{{ modalTitle }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
+    <h1>Department List</h1>
 
-                <div class="modal-body">
-                    <div class="input-group mb-3">
-                        <span class="input-group-text">Department Name</span>
-                        <input type="text" class="form-control" v-model="DepartmentName">
-                    </div>
+    <v-table striped="even">
+        <thead>
+            <tr>
+                <th class="text-left">
+                    ID
+                </th>
+                <th class="text-left">
+                    Name
+                </th>
+                <th class="text-left">
+                    Actions
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="department in departments" :key="department.id">
+                <td>{{ department.id }}</td>
+                <td>{{ department.DepartmentName }}</td>
+                <td>
+                    <v-btn class="ma-2" color="yellow-darken-1" @click="editClick(department)">
+                        Edit
+                    </v-btn>
+                    <v-btn color="red-darken-1" @click="openDeleteDialog(department.id)">
+                        Delete
+                    </v-btn>
+                </td>
+            </tr>
+        </tbody>
+    </v-table>
 
-                    <button type="button" @click="createClick" v-if="DepartmentId == 0" class="btn btn-primary">
-                        Create
-                    </button>
-                    <button type="button" @click="updateClick" v-if="DepartmentId != 0" class="btn btn-primary">
-                        Update
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <v-dialog v-model="dialog" max-width="500">
+        <v-card :title="modalTitle">
+            <v-container>
+                <v-row>
+                    <v-col cols="12">
+                        <v-text-field v-model="DepartmentName" label="Department Name" required></v-text-field>
+                    </v-col>
+                </v-row>
+            </v-container>
+
+            <template v-slot:actions>
+                <v-btn text="Close" @click="dialog = false">Close</v-btn>
+
+                <v-spacer></v-spacer>
+
+                <v-btn @click="createClick" v-if="DepartmentId == 0">
+                    Create
+                </v-btn>
+                <v-btn @click="updateClick" v-if="DepartmentId != 0">
+                    Update
+                </v-btn>
+            </template>
+        </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="confirmationDialog" width="auto">
+        <v-card max-width="400" text="You won't be able to revert this!." title="Are you sure?">
+            <template v-slot:actions>
+                <v-btn text="Close" @click="confirmationDialog = false">Cancel</v-btn>
+                <v-spacer></v-spacer>
+                <v-btn class="ms-auto" text="Yes"
+                    @click="deleteDepartment(departmentToDelete); confirmationDialog = false"></v-btn>
+            </template>
+        </v-card>
+    </v-dialog>
 </template>
